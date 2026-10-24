@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Home IoT | Light Monitoring & Recommendation System</title>
+  <meta name="description" content="Real-time light monitoring, LED status tracking, and energy efficiency recommendation system for ESP32 smart home.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <div class="container">
+    <!-- Top Header -->
+    <header>
+      <div class="brand-wrapper">
+        <div class="brand-icon">💡</div>
+        <div class="brand-text">
+          <h1>Smart Home Light Monitoring</h1>
+          <p>ESP32 Telemetry & Intelligent Recommendation Hub</p>
+        </div>
+      </div>
+      <div class="header-status">
+        <div id="db-status-badge" class="status-badge">
+          <span class="status-dot"></span>
+          <span id="system-status-text">Connecting...</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Intelligent Recommendation Banner -->
+    <section id="recommendation-section" class="recommendation-card">
+      <div class="recom-icon" id="recom-icon">🧠</div>
+      <div class="recom-content">
+        <h2>AI Recommendation Engine</h2>
+        <p id="recom-text">Analyzing ambient light and power consumption patterns...</p>
+      </div>
+    </section>
+
+    <!-- Key Metrics Grid -->
+    <main>
+      <section class="cards-grid" aria-label="System Metrics">
+        <!-- Ambient Light Card -->
+        <article class="metric-card" id="card-light-metric">
+          <div class="card-top">
+            <span class="card-title">Ambient Light</span>
+            <span class="card-icon" id="icon-light">☀️</span>
+          </div>
+          <div class="card-value" id="val-light-status">--</div>
+          <div class="card-subtext" id="sub-light-status">Digital LDR Sensor (GPIO 27)</div>
+        </article>
+
+        <!-- Smart LED Status Card -->
+        <article class="metric-card" id="card-led-metric">
+          <div class="card-top">
+            <span class="card-title">Smart LED Output</span>
+            <span class="card-icon" id="icon-led">💡</span>
+          </div>
+          <div class="card-value" id="val-led-status">--</div>
+          <div class="card-subtext">Actuator Output (GPIO 23)</div>
+        </article>
+
+        <!-- Operating Mode Card -->
+        <article class="metric-card" id="card-mode-metric">
+          <div class="card-top">
+            <span class="card-title">Operating Mode</span>
+            <span class="card-icon">⚙️</span>
+          </div>
+          <div class="card-value" id="val-mode">--</div>
+          <div class="card-subtext">Automatic (Sensor) / Manual (Web)</div>
+        </article>
+
+        <!-- Device Info Card -->
+        <article class="metric-card" id="card-device-metric">
+          <div class="card-top">
+            <span class="card-title">Device Telemetry</span>
+            <span class="card-icon">📡</span>
+          </div>
+          <div class="card-value" style="font-size: 1.25rem;" id="val-device-id">Waiting...</div>
+          <div class="card-subtext" id="val-timestamp">Last sync: Never</div>
+        </article>
+      </section>
+
+      <!-- History Table Section -->
+      <section class="history-section" aria-label="Telemetry History">
+        <div class="history-header">
+          <h2>Recent Sensor Readings</h2>
+          <div class="table-controls">
+            <label for="limit-select" class="card-subtext">Show:</label>
+            <select id="limit-select" class="select-control" aria-label="Readings limit">
+              <option value="10">10 records</option>
+              <option value="25">25 records</option>
+              <option value="50" selected>50 records</option>
+              <option value="100">100 records</option>
+            </select>
+            <label for="auto-refresh-select" class="card-subtext">Polling:</label>
+            <select id="auto-refresh-select" class="select-control" aria-label="Polling frequency">
+              <option value="3000">3s</option>
+              <option value="5000" selected>5s</option>
+              <option value="10000">10s</option>
+              <option value="0">Off</option>
+            </select>
+            <button id="btn-refresh" class="btn btn-primary" type="button">
+              <span>↻ Refresh Now</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="table-responsive">
+          <table id="readings-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Device ID</th>
+                <th>Server Timestamp</th>
+                <th>Ambient Light</th>
+                <th>LED State</th>
+                <th>Operating Mode</th>
+              </tr>
+            </thead>
+            <tbody id="readings-tbody">
+              <tr>
+                <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 24px;">
+                  Awaiting sensor telemetry from ESP32...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <!-- Footer -->
+    <footer>
+      <p>IoT-Based Smart Home Light Monitoring & Recommendation System &bull; FastAPI + PostgreSQL + ESP32</p>
+    </footer>
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

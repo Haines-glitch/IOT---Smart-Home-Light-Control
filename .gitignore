@@ -1,0 +1,36 @@
+# Environment & Secrets
+.env
+.env.local
+.env.*.local
+
+# Python & Virtual Environments
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.venv/
+env/
+ENV/
+
+# Testing & Coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Databases & Local persistence
+*.db
+*.sqlite
+*.sqlite3
+sensor_data.db
+
+# Operating System & IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Arduino build artifacts
+*.hex
+*.bin
+*.elf
+build/
