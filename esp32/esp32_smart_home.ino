@@ -2,88 +2,103 @@
 #include <WebServer.h>
 #include <WiFiClientSecure.h>
 #include <HTTPClient.h>
+#include <time.h>
 
-// ============================================================================
-// 1. NETWORK & CLOUD BACKEND CONFIGURATION
-// ============================================================================
-// Replace with your Wi-Fi credentials
+// =====================================================
+// 1. WIFI AND CLOUD CONFIGURATION
+// =====================================================
+
 const char* ssid = "realme 9";
-const char* password = "YOUR_WIFI_PASSWORD"; // Do not commit passwords to public repos
+const char* password = "12345678";
 
-// Render FastAPI Backend URL (Placeholder: replace with your deployed Render URL)
-// Example: "https://smart-home-backend.onrender.com/api/readings"
-const char* serverUrl = "https://YOUR-RENDER-APP.onrender.com/api/readings";
+const char* serverUrl =
+  "https://iot-smart-home-light-control.onrender.com/api/readings";
 
-// Device API Key (Must match DEVICE_API_KEY in your Render environment variables)
-const char* deviceApiKey = "replace-with-a-long-random-secret";
-
-// Device Identifier
+// Must match DEVICE_API_KEY configured in Render.
+const char* deviceApiKey = "my-smart-home-secret-2026";
 const char* deviceId = "esp32-smart-home-01";
 
-// Telemetry transmit interval (in milliseconds, e.g. 6000 = 6 seconds)
-const unsigned long telemetryInterval = 6000;
+// Official ISRG Root X1 certificate PEM (Let's Encrypt Root CA)
+const char* ROOT_CA = R"PEM(
+-----BEGIN CERTIFICATE-----
+MIIFazCCA1OgAwIBAgIRAIIQz7DSQONZRGPgu2OCiwAwDQYJKoZIhvcNAQELBQAw
+TzELMAkGA1UEBhMCVVMxKTAnBgNVBAoTIEludGVybmV0IFNlY3VyaXR5IFJlc2Vh
+cmNoIEdyb3VwMRUwEwYDVQQDEwxJU1JHIFJvb3QgWDEwHhcNMTUwNjA0MTEwNDM4
+WhcNMzUwNjA0MTEwNDM4WjBPMQswCQYDVQQGEwJVUzEpMCcGA1UEChMgSW50ZXJu
+ZXQgU2VjdXJpdHkgUmVzZWFyY2ggR3JvdXAxFTATBgNVBAMTDElTUkcgUm9vdCBY
+MTCCAiIwDQYJKoZIhvcNAQEBBQADggIPADCCAgoCggIBAK3oJHP0FDfzm54rVygc
+h77ct984kIxuPOZXoHj3dcKi/vVqbvYATyjb3miGbESTtrFj/RQSa78f0uoxmyF+
+0TM8ukj13Xnfs7j/EvEhmkvBioZxaUpmZmyPfjxwv60pIgbz5MDmgK7iS4+3mX6U
+A5/TR5d8mUgjU+g4rk8Kb4Mu0UlXjIB0ttov0DiNewNwIRt18jA8+o+u3dpjq+sW
+T8KOEUt+zwvo/7V3LvSye0rgTBIlDHCNAymg4VMk7BPZ7hm/ELNKjD+Jo2FR3qyH
+B5T0Y3HsLuJvW5iB4YlcNHlsdu87kGJ55tukmi8mxdAQ4Q7e2RCOFvu396j3x+UC
+B5iPNgiV5+I3lg02dZ77DnKxHZu8A/lJBdiB3QW0KtZB6awBdpUKD9jf1b0SHzUv
+KBds0pjBqAlkd25HN7rOrFleaJ1/ctaJxQZBKT5ZPt0m9STJEadao0xAH0ahmbWn
+OlFuhjuefXKnEgV4We0+UXgVCwOPjdAvBbI+e0ocS3MFEvzG6uBQE3xDk3SzynTn
+jh8BCNAw1FtxNrQHusEwMFxIt4I7mKZ9YIqioymCzLq9gwQbooMDQaHWBfEbwrbw
+qHyGO0aoSCqI3Haadr8faqU9GY/rOPNk3sgrDQoo//fb4hVC1CLQJ13hef4Y53CI
+rU7m2Ys6xt0nUW7/vGT1M0NPAgMBAAGjQjBAMA4GA1UdDwEB/wQEAwIBBjAPBgNV
+HRMBAf8EBTADAQH/MB0GA1UdDgQWBBR5tFnme7bl5AFzgAiIyBpY9umbbjANBgkq
+hkiG9w0BAQsFAAOCAgEAVR9YqbyyqFDQDLHYGmkgJykIrGF1XIpu+ILlaS/V9lZL
+ubhzEFnTIZd+50xx+7LSYK05qAvqFyFWhfFQDlnrzuBZ6brJFe+GnY+EgPbk6ZGQ
+3BebYhtF8GaV0nxvwuo77x/Py9auJ/GpsMiu/X1+mvoiBOv/2X/qkSsisRcOj/KK
+NFtY2PwByVS5uCbMiogziUwthDyC3+6WVwW6LLv3xLfHTjuCvjHIInNzktHCgKQ5
+ORAzI4JMPJ+GslWYHb4phowim57iaztXOoJwTdwJx4nLCgdNbOhdjsnvzqvHu7Ur
+TkXWStAmzOVyyghqpZXjFaH3pO3JLF+l+/+sKAIuvtd7u+Nxe5AW0wdeRlN8NwdC
+jNPElpzVmbUq4JUagEiuTDkHzsxHpFKVK7q4+63SM1N95R1NbdWhscdCb+ZAJzVc
+oyi3B43njTOQ5yOf+1CceWxG1bQVs5ZufpsMljq4Ui0/1lvh+wjChP4kqKOJ2qxq
+4RgqsahDYVvTH9w7jXbyLeiNdd8XM2w9U/t7y0Ff/9yi0GE44Za4rF2LN9d11TPA
+mRGunUHBcnWEvgJBQl9nJEiU0Zsnvgc/ubhPgXRR4Xq37Z0j4r7g1SgEEzwxA57d
+emyPxgcYxn/eR44/KJ4EBs+lVDR3veyJm+kXQ99b21/+jh5Xos1AnX5iItreGCc=
+-----END CERTIFICATE-----
+)PEM";
+
+// Telemetry interval (10 seconds)
+const unsigned long telemetryInterval = 10000;
 unsigned long lastTelemetryTime = 0;
 
-// ============================================================================
-// 2. HARDWARE PINS
-// ============================================================================
-const int LDR_PIN = 27;  // LDR module DO (HIGH = darkness, LOW = light)
-const int LED_PIN = 23;  // Actuator LED through 220-ohm resistor
+// Wi-Fi retry interval
+const unsigned long reconnectInterval = 10000;
+unsigned long lastReconnectTime = 0;
 
-// ============================================================================
-// 3. TLS CERTIFICATE FOR SECURE HTTPS TO RENDER
-// Render uses Let's Encrypt certificates. The ISRG Root X1 CA validates
-// *.onrender.com without disabling SSL/TLS security.
-// ============================================================================
-const char* ISRG_ROOT_CA = \
-"-----BEGIN CERTIFICATE-----\n" \
-"MIIFazCCA1OgAwIBAgIRAIIQz7DSQONZRQBq179P9DMA0GCSqGSIb3DQEBCwUAMHEx\n" \
-"CzAJBgNVBAYTAlVTMRYwFAYDVQQKEw1HZXREaWdpdGFsIENBMR0wGwYDVQQDExRJ\n" \
-"U1JHIFJvb3QgWDEgT2ZmaWNpYWwxJzAlBgkqhkiG9w0BCQEWGGluZm9AY2VydC5p\n" \
-"c3Jncm9vdHgxLm9yZzAeFw0xNTA2MDQxMTA0MThaFw0zNTA2MDQxMTA0MThaMHEx\n" \
-"CzAJBgNVBAYTAlVTMRYwFAYDVQQKEw1HZXREaWdpdGFsIENBMR0wGwYDVQQDExRJ\n" \
-"U1JHIFJvb3QgWDEgT2ZmaWNpYWwxJzAlBgkqhkiG9w0BCQEWGGluZm9AY2VydC5p\n" \
-"c3Jncm9vdHgxLm9yZzCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAK3D\n" \
-"Lgsk3y5i3B/x6I+U3f90jV3F3bF5c6e8V4J6t7f8c1n+g/hD9e2V3J4i0x7h\n" \
-"b2m2k3Y3yvK9v/6F8L4x+s3v8W9g4j1l4e0k7j3y9r0m8c1d3f5b7l6d1e4g\n" \
-"y3z2e4a6f7b1c3e4b7a1f2e3d4c5b6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1\n" \
-"d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1\n" \
-"d2e3f4a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1\n" \
-"IDAQABo0IwQDAPBgNVHRMBAf8EBTADAQH/MA4GA1UdDwEB/wQEAwIBhjAdBgNV\n" \
-"HQ4EFgQUebs9R7N3UVO/vVwE4W01FmH12bwwDQYJKoZIhvcNAQELBQADggEBANjG\n" \
-"p14kY2eU2X5V7b3c2d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a\n" \
-"5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a\n" \
-"5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a\n" \
-"-----END CERTIFICATE-----\n";
+// =====================================================
+// 2. HARDWARE PINS
+// =====================================================
+
+const int LDR_PIN = 27;  // HIGH = dark, LOW = light
+const int LED_PIN = 23;  // External LED with 220-ohm resistor
 
 WebServer server(80);
 
-// Control settings
+// =====================================================
+// 3. CONTROL STATE
+// =====================================================
+
 bool automaticMode = true;
 bool isDark = false;
 bool ledOn = false;
 
 void updateSensor() {
-  // HIGH = darkness, LOW = light
   isDark = (digitalRead(LDR_PIN) == HIGH);
 
-  // In automatic mode, the sensor controls the LED.
   if (automaticMode) {
     ledOn = isDark;
     digitalWrite(LED_PIN, ledOn ? HIGH : LOW);
   }
 }
 
-// ============================================================================
-// 4. EXISTING LOCAL WEBSITE (Preserved Exactly)
-// ============================================================================
+// =====================================================
+// 4. LOCAL WEB DASHBOARD
+// =====================================================
+
 void handleRoot() {
   String page = R"HTML(
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+<meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Smart Home Control</title>
+<title>Smart Home Light Control</title>
 <style>
 body {
   font-family: Arial, sans-serif;
@@ -100,22 +115,17 @@ body {
   border-radius: 18px;
 }
 select, button {
+  box-sizing: border-box;
   padding: 13px;
   margin: 8px;
   border: none;
   border-radius: 9px;
   font-size: 16px;
 }
-select {
-  width: 85%;
-  background: #374151;
-  color: white;
-}
-button {
-  color: white;
-  width: 85%;
-  cursor: pointer;
-}
+select, button { width: 85%; }
+select { background: #374151; color: white; }
+button { color: white; cursor: pointer; }
+button:hover { opacity: 0.85; }
 .on { background: #16a34a; }
 .off { background: #dc2626; }
 .status {
@@ -124,19 +134,9 @@ button {
   margin: 18px 0;
   font-weight: bold;
 }
-.bright {
-  background: #14532d;
-  color: #86efac;
-}
-.dark {
-  background: #713f12;
-  color: #fde68a;
-}
-.note {
-  color: #cbd5e1;
-  font-size: 14px;
-  line-height: 1.5;
-}
+.bright { background: #14532d; color: #86efac; }
+.dark { background: #713f12; color: #fde68a; }
+.note { color: #cbd5e1; font-size: 14px; line-height: 1.5; }
 .hidden { display: none; }
 </style>
 </head>
@@ -146,32 +146,23 @@ button {
   <h2>Light Control System</h2>
 
   <p class="note">Control Mode</p>
-
   <select id="mode" onchange="changeMode()">
     <option value="auto">Automatic</option>
     <option value="manual">Manual</option>
   </select>
 
-  <div id="sensorStatus" class="status">
-    Reading sensor...
-  </div>
-
+  <div id="sensorStatus" class="status">Reading sensor...</div>
   <p id="recommendation">Please wait...</p>
-
   <h3 id="ledStatus">LED: --</h3>
 
   <div id="manualControls" class="hidden">
     <h3>Manual LED Control</h3>
-    <button class="on" onclick="controlLED('on')">
-      LIGHT ON
-    </button>
-    <button class="off" onclick="controlLED('off')">
-      LIGHT OFF
-    </button>
+    <button class="on" onclick="controlLED('on')">LIGHT ON</button>
+    <button class="off" onclick="controlLED('off')">LIGHT OFF</button>
   </div>
 
   <p id="message" class="note">Connecting...</p>
-  <p class="note">Status refreshes every second.</p>
+  <p class="note">Refreshes every second. Cloud data is transmitted separately.</p>
 </div>
 
 <script>
@@ -179,8 +170,9 @@ let busy = false;
 
 async function postCommand(url) {
   const response = await fetch(url, { method: 'POST' });
-  if (!response.ok) throw new Error('Command failed');
-  return response;
+  if (!response.ok) {
+    throw new Error('HTTP ' + response.status);
+  }
 }
 
 async function changeMode() {
@@ -188,18 +180,15 @@ async function changeMode() {
   busy = true;
 
   const mode = document.getElementById('mode').value;
-  document.getElementById('message').textContent =
-    'Changing mode...';
+  document.getElementById('message').textContent = 'Changing mode...';
 
   try {
     await postCommand('/mode/' + mode);
     await updateDashboard();
-    document.getElementById('message').textContent =
-      'Control mode updated';
+    document.getElementById('message').textContent = 'Control mode updated';
   } catch (error) {
     document.getElementById('message').textContent =
-      'Could not change mode. Retrying status...';
-    await updateDashboard();
+      'Could not change mode: ' + error.message;
   } finally {
     busy = false;
   }
@@ -212,11 +201,10 @@ async function controlLED(action) {
   try {
     await postCommand('/led/' + action);
     await updateDashboard();
-    document.getElementById('message').textContent =
-      'Manual command completed';
+    document.getElementById('message').textContent = 'Manual command completed';
   } catch (error) {
     document.getElementById('message').textContent =
-      'Could not control LED';
+      'Could not control LED: ' + error.message;
   } finally {
     busy = false;
   }
@@ -224,28 +212,19 @@ async function controlLED(action) {
 
 async function updateDashboard() {
   try {
-    const response = await fetch('/status', {
-      cache: 'no-store'
-    });
-    if (!response.ok) throw new Error('Status failed');
+    const response = await fetch('/status', { cache: 'no-store' });
+    if (!response.ok) throw new Error('Status request failed');
 
     const data = await response.json();
-
     const mode = data.automatic ? 'auto' : 'manual';
-    const selector = document.getElementById('mode');
 
-    if (selector.value !== mode) selector.value = mode;
-
+    document.getElementById('mode').value = mode;
     document.getElementById('manualControls').className =
       data.automatic ? 'hidden' : '';
 
     const status = document.getElementById('sensorStatus');
-    status.textContent = data.dark
-      ? 'Darkness detected'
-      : 'Light detected';
-
-    status.className = 'status ' +
-      (data.dark ? 'dark' : 'bright');
+    status.textContent = data.dark ? 'Darkness detected' : 'Light detected';
+    status.className = 'status ' + (data.dark ? 'dark' : 'bright');
 
     document.getElementById('recommendation').textContent =
       data.dark
@@ -255,8 +234,7 @@ async function updateDashboard() {
     document.getElementById('ledStatus').textContent =
       'LED: ' + (data.ledOn ? 'ON' : 'OFF');
 
-    document.getElementById('message').textContent =
-      'ESP32 connected';
+    document.getElementById('message').textContent = 'ESP32 connected';
   } catch (error) {
     document.getElementById('message').textContent =
       'Connection lost. Retrying...';
@@ -273,41 +251,45 @@ setInterval(updateDashboard, 1000);
   server.send(200, "text/html", page);
 }
 
+// =====================================================
+// 5. LOCAL CONTROL API
+// =====================================================
+
 void handleModeAuto() {
   automaticMode = true;
   updateSensor();
-
-  Serial.println("Mode: AUTOMATIC");
+  Serial.println("[Control] Automatic mode");
   server.send(200, "text/plain", "Automatic mode");
 }
 
 void handleModeManual() {
   automaticMode = false;
-
-  Serial.println("Mode: MANUAL");
+  Serial.println("[Control] Manual mode");
   server.send(200, "text/plain", "Manual mode");
 }
 
 void handleLedOn() {
-  if (!automaticMode) {
-    ledOn = true;
-    digitalWrite(LED_PIN, HIGH);
-    Serial.println("Manual LED ON");
-    server.send(200, "text/plain", "LED ON");
-  } else {
+  if (automaticMode) {
     server.send(409, "text/plain", "Switch to Manual mode first");
+    return;
   }
+
+  ledOn = true;
+  digitalWrite(LED_PIN, HIGH);
+  Serial.println("[Control] Manual LED ON");
+  server.send(200, "text/plain", "LED ON");
 }
 
 void handleLedOff() {
-  if (!automaticMode) {
-    ledOn = false;
-    digitalWrite(LED_PIN, LOW);
-    Serial.println("Manual LED OFF");
-    server.send(200, "text/plain", "LED OFF");
-  } else {
+  if (automaticMode) {
     server.send(409, "text/plain", "Switch to Manual mode first");
+    return;
   }
+
+  ledOn = false;
+  digitalWrite(LED_PIN, LOW);
+  Serial.println("[Control] Manual LED OFF");
+  server.send(200, "text/plain", "LED OFF");
 }
 
 void handleStatus() {
@@ -326,84 +308,110 @@ void handleStatus() {
   server.send(200, "application/json", json);
 }
 
-// ============================================================================
-// 5. CLOUD TELEMETRY TRANSMISSION (Render FastAPI Backend)
-// ============================================================================
+// =====================================================
+// 6. WIFI CONNECTION MANAGEMENT
+// =====================================================
+
+void connectWiFi() {
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(ssid, password);
+
+  Serial.print("[Wi-Fi] Connecting");
+
+  unsigned long start = millis();
+  while (WiFi.status() != WL_CONNECTED &&
+         millis() - start < 15000) {
+    delay(500);
+    Serial.print(".");
+  }
+
+  if (WiFi.status() == WL_CONNECTED) {
+    Serial.println("\n[Wi-Fi] Connected!");
+    Serial.print("[Wi-Fi] IP address: ");
+    Serial.println(WiFi.localIP());
+  } else {
+    Serial.println("\n[Wi-Fi] Connection timed out. Will retry.");
+  }
+}
+
+// =====================================================
+// 7. CLOUD TELEMETRY
+// =====================================================
+
 void sendTelemetryToCloud() {
   if (WiFi.status() != WL_CONNECTED) {
     Serial.println("[Cloud] Wi-Fi offline. Skipping telemetry.");
     return;
   }
 
-  updateSensor(); // Refresh current state
+  updateSensor();
 
   WiFiClientSecure client;
-  client.setCACert(ISRG_ROOT_CA); // Verify Let's Encrypt SSL/TLS on Render
-  client.setTimeout(8000);        // 8 second timeout prevents loop blocking
+  client.setCACert(ROOT_CA);
+  client.setTimeout(8000);
 
   HTTPClient https;
-  Serial.print("[Cloud] Sending telemetry to: ");
-  Serial.println(serverUrl);
+  https.setConnectTimeout(10000);
+  https.setTimeout(10000);
 
-  if (https.begin(client, serverUrl)) {
-    https.addHeader("Content-Type", "application/json");
-    https.addHeader("X-Device-Key", deviceApiKey);
+  Serial.println("[Cloud] Sending sensor reading...");
 
-    // JSON payload adhering to FastAPI Pydantic schema
-    String jsonPayload = "{";
-    jsonPayload += "\"device_id\":\"" + String(deviceId) + "\",";
-    jsonPayload += "\"light_status\":\"" + String(isDark ? "DARK" : "LIGHT") + "\",";
-    jsonPayload += "\"led_status\":" + String(ledOn ? "true" : "false") + ",";
-    jsonPayload += "\"mode\":\"" + String(automaticMode ? "AUTO" : "MANUAL") + "\"";
-    jsonPayload += "}";
-
-    int httpCode = https.POST(jsonPayload);
-
-    if (httpCode > 0) {
-      Serial.printf("[Cloud] HTTP Response code: %d\n", httpCode);
-      if (httpCode == HTTP_CODE_CREATED || httpCode == HTTP_CODE_OK) {
-        Serial.println("[Cloud] Reading saved successfully in PostgreSQL!");
-      }
-    } else {
-      Serial.printf("[Cloud] HTTPS POST error: %s\n", https.errorToString(httpCode).c_str());
-    }
-    https.end();
-  } else {
-    Serial.println("[Cloud] Unable to connect to host.");
+  if (!https.begin(client, serverUrl)) {
+    Serial.println("[Cloud] HTTPS initialization failed.");
+    return;
   }
+
+  https.addHeader("Content-Type", "application/json");
+  https.addHeader("X-Device-Key", deviceApiKey);
+
+  String payload = "{";
+  payload += "\"device_id\":\"" + String(deviceId) + "\",";
+  payload += "\"light_status\":\"" + String(isDark ? "DARK" : "LIGHT") + "\",";
+  payload += "\"led_status\":";
+  payload += ledOn ? "true" : "false";
+  payload += ",\"mode\":\"";
+  payload += automaticMode ? "AUTO" : "MANUAL";
+  payload += "\"}";
+
+  int httpCode = https.POST(payload);
+
+  if (httpCode > 0) {
+    Serial.printf("[Cloud] HTTP response: %d\n", httpCode);
+
+    String responseBody = https.getString();
+    if (httpCode == HTTP_CODE_OK ||
+        httpCode == HTTP_CODE_CREATED) {
+      Serial.println("[Cloud] Reading submitted successfully.");
+    } else {
+      Serial.println("[Cloud] Backend response:");
+      Serial.println(responseBody);
+    }
+  } else {
+    Serial.printf("[Cloud] HTTPS error: %s\n",
+                  https.errorToString(httpCode).c_str());
+    Serial.println("[Cloud] Check TLS certificate, URL and network.");
+  }
+
+  https.end();
 }
 
-// ============================================================================
-// 6. SETUP & MAIN LOOP
-// ============================================================================
+// =====================================================
+// 8. SETUP
+// =====================================================
+
 void setup() {
   Serial.begin(115200);
+  delay(300);
 
   pinMode(LDR_PIN, INPUT);
-
-  digitalWrite(LED_PIN, LOW);
   pinMode(LED_PIN, OUTPUT);
+  digitalWrite(LED_PIN, LOW);
 
-  WiFi.mode(WIFI_STA);
-  WiFi.begin(ssid, password);
+  // Set ESP32 clock via NTP so TLS certificate validity dates can be checked accurately.
+  configTime(0, 0, "pool.ntp.org", "time.google.com");
 
-  Serial.print("Connecting to Wi-Fi");
+  connectWiFi();
 
-  unsigned long startAttempt = millis();
-  while (WiFi.status() != WL_CONNECTED && millis() - startAttempt < 15000) {
-    delay(500);
-    Serial.print(".");
-  }
-
-  if (WiFi.status() == WL_CONNECTED) {
-    Serial.println("\nWi-Fi connected!");
-    Serial.print("Local control dashboard: http://");
-    Serial.println(WiFi.localIP());
-  } else {
-    Serial.println("\nWi-Fi connection timed out. Will retry in loop.");
-  }
-
-  // Register existing local web server endpoints
   server.on("/", HTTP_GET, handleRoot);
   server.on("/status", HTTP_GET, handleStatus);
   server.on("/mode/auto", HTTP_POST, handleModeAuto);
@@ -412,31 +420,39 @@ void setup() {
   server.on("/led/off", HTTP_POST, handleLedOff);
 
   server.begin();
-  Serial.println("Smart Home system started!");
+  Serial.println("[System] Local web server started.");
+
+  if (WiFi.status() == WL_CONNECTED) {
+    Serial.print("[System] Open dashboard: http://");
+    Serial.println(WiFi.localIP());
+  }
 }
 
+// =====================================================
+// 9. MAIN LOOP
+// =====================================================
+
 void loop() {
-  // 1. Reconnect Wi-Fi if dropped
+  server.handleClient();
+
+  // Reconnect after a Wi-Fi disconnection.
   if (WiFi.status() != WL_CONNECTED) {
-    static unsigned long lastReconnect = 0;
-    if (millis() - lastReconnect > 15000) {
-      lastReconnect = millis();
+    if (millis() - lastReconnectTime >= reconnectInterval) {
+      lastReconnectTime = millis();
+      Serial.println("[Wi-Fi] Disconnected. Reconnecting...");
       WiFi.reconnect();
     }
   }
 
-  // 2. Serve local web interface requests
-  server.handleClient();
-
-  // 3. Keep sensor & actuator states updated
   updateSensor();
 
-  // 4. Send telemetry to Render backend every 6 seconds non-blockingly
+  // Send telemetry every 10 seconds.
   unsigned long now = millis();
+
   if (now - lastTelemetryTime >= telemetryInterval) {
     lastTelemetryTime = now;
     sendTelemetryToCloud();
   }
 
-  delay(10); // Cooperative multitasking yield
+  delay(5);
 }
