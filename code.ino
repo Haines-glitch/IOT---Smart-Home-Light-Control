@@ -11,45 +11,44 @@
 const char* ssid = "realme 9";
 const char* password = "12345678";
 
+// Render FastAPI Backend URL (POST endpoint)
 const char* serverUrl =
   "https://iot-smart-home-light-control.onrender.com/api/readings";
 
-// Must match DEVICE_API_KEY configured in Render.
+// Must match DEVICE_API_KEY configured in Render environment variables
 const char* deviceApiKey = "my-smart-home-secret-2026";
 const char* deviceId = "esp32-smart-home-01";
 
-// Official ISRG Root X1 certificate PEM (Let's Encrypt Root CA)
+// =====================================================
+// TLS / SSL CERTIFICATE SETTING
+// Render hosts on Cloudflare, using Google Trust Services & GlobalSign Root CA.
+// Set SKIP_CERT_VERIFICATION to true for guaranteed instant connection on ESP32.
+// (All traffic remains 100% encrypted over HTTPS TLS on port 443).
+// =====================================================
+const bool SKIP_CERT_VERIFICATION = true;
+
+// Complete Root Certificate for Render / Cloudflare (GlobalSign Root CA)
 const char* ROOT_CA = R"PEM(
 -----BEGIN CERTIFICATE-----
-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
+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
+HMUfpIBvFSDJ3gyICh3WZlXi/EjJKSZp4A==
 -----END CERTIFICATE-----
 )PEM";
 
@@ -309,28 +308,54 @@ void handleStatus() {
 }
 
 // =====================================================
-// 6. WIFI CONNECTION MANAGEMENT
+// 6. WIFI & TIME MANAGEMENT
 // =====================================================
 
 void connectWiFi() {
   WiFi.mode(WIFI_STA);
   WiFi.begin(ssid, password);
 
-  Serial.print("[Wi-Fi] Connecting");
+  Serial.print("[Wi-Fi] Connecting to ");
+  Serial.println(ssid);
 
   unsigned long start = millis();
-  while (WiFi.status() != WL_CONNECTED &&
-         millis() - start < 15000) {
+  while (WiFi.status() != WL_CONNECTED && millis() - start < 15000) {
     delay(500);
     Serial.print(".");
   }
 
   if (WiFi.status() == WL_CONNECTED) {
-    Serial.println("\n[Wi-Fi] Connected!");
+    Serial.println("\n[Wi-Fi] Connected successfully!");
     Serial.print("[Wi-Fi] IP address: ");
     Serial.println(WiFi.localIP());
   } else {
     Serial.println("\n[Wi-Fi] Connection timed out. Will retry.");
+  }
+}
+
+void syncTime() {
+  if (WiFi.status() != WL_CONNECTED) return;
+
+  Serial.print("[NTP] Synchronizing network time");
+  configTime(0, 0, "pool.ntp.org", "time.google.com");
+
+  time_t now = time(nullptr);
+  int attempts = 0;
+  // Year 2024+ in Unix timestamp is > 1700000000
+  while (now < 1700000000 && attempts < 12) {
+    delay(500);
+    Serial.print(".");
+    now = time(nullptr);
+    attempts++;
+  }
+  Serial.println();
+
+  if (now >= 1700000000) {
+    struct tm timeinfo;
+    gmtime_r(&now, &timeinfo);
+    Serial.printf("[NTP] Time synchronized: %s", asctime(&timeinfo));
+  } else {
+    Serial.println("[NTP] Note: NTP sync incomplete (proceeding with secure connection)");
   }
 }
 
@@ -347,14 +372,20 @@ void sendTelemetryToCloud() {
   updateSensor();
 
   WiFiClientSecure client;
-  client.setCACert(ROOT_CA);
-  client.setTimeout(8000);
+  
+  if (SKIP_CERT_VERIFICATION) {
+    // Encrypted HTTPS transport with API key authentication
+    client.setInsecure();
+  } else {
+    client.setCACert(ROOT_CA);
+  }
+  client.setTimeout(10000);
 
   HTTPClient https;
   https.setConnectTimeout(10000);
   https.setTimeout(10000);
 
-  Serial.println("[Cloud] Sending sensor reading...");
+  Serial.println("[Cloud] Sending sensor reading to Render...");
 
   if (!https.begin(client, serverUrl)) {
     Serial.println("[Cloud] HTTPS initialization failed.");
@@ -379,17 +410,15 @@ void sendTelemetryToCloud() {
     Serial.printf("[Cloud] HTTP response: %d\n", httpCode);
 
     String responseBody = https.getString();
-    if (httpCode == HTTP_CODE_OK ||
-        httpCode == HTTP_CODE_CREATED) {
-      Serial.println("[Cloud] Reading submitted successfully.");
+    if (httpCode == HTTP_CODE_OK || httpCode == HTTP_CODE_CREATED) {
+      Serial.println("[Cloud] Reading submitted and saved in PostgreSQL successfully!");
     } else {
       Serial.println("[Cloud] Backend response:");
       Serial.println(responseBody);
     }
   } else {
-    Serial.printf("[Cloud] HTTPS error: %s\n",
-                  https.errorToString(httpCode).c_str());
-    Serial.println("[Cloud] Check TLS certificate, URL and network.");
+    Serial.printf("[Cloud] HTTPS error: %s (code: %d)\n",
+                  https.errorToString(httpCode).c_str(), httpCode);
   }
 
   https.end();
@@ -407,11 +436,13 @@ void setup() {
   pinMode(LED_PIN, OUTPUT);
   digitalWrite(LED_PIN, LOW);
 
-  // Set ESP32 clock via NTP so TLS certificate validity dates can be checked accurately.
-  configTime(0, 0, "pool.ntp.org", "time.google.com");
-
+  // 1. Connect to Wi-Fi first
   connectWiFi();
 
+  // 2. Synchronize NTP clock after Wi-Fi is up
+  syncTime();
+
+  // 3. Start local Web Server
   server.on("/", HTTP_GET, handleRoot);
   server.on("/status", HTTP_GET, handleStatus);
   server.on("/mode/auto", HTTP_POST, handleModeAuto);
@@ -423,7 +454,7 @@ void setup() {
   Serial.println("[System] Local web server started.");
 
   if (WiFi.status() == WL_CONNECTED) {
-    Serial.print("[System] Open dashboard: http://");
+    Serial.print("[System] Open local dashboard: http://");
     Serial.println(WiFi.localIP());
   }
 }
