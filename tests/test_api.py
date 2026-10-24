@@ -1,5 +1,5 @@
 import pytest
-from app.models import SensorReading
+from app.models import SensorReading, DeviceControl
 
 
 def test_health_check(client):
@@ -187,3 +187,31 @@ def test_root_serves_dashboard(client):
     assert response.status_code == 200
     assert "text/html" in response.headers.get("content-type", "")
     assert "Smart Home Light Monitoring" in response.text
+
+
+def test_control_endpoints(client):
+    """Test GET /api/control and POST /api/control."""
+    # 1. Fetch initial control state
+    resp = client.get("/api/control?device_id=esp32-smart-home-01")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["mode"] == "AUTO"
+
+    # 2. Switch to MANUAL mode and turn LED ON
+    update_resp = client.post(
+        "/api/control?device_id=esp32-smart-home-01",
+        json={"mode": "MANUAL", "led_status": True}
+    )
+    assert update_resp.status_code == 200
+    updated_data = update_resp.json()
+    assert updated_data["mode"] == "MANUAL"
+    assert updated_data["led_status"] is True
+
+    # 3. Switch LED OFF in MANUAL mode
+    off_resp = client.post(
+        "/api/control?device_id=esp32-smart-home-01",
+        json={"led_status": False}
+    )
+    assert off_resp.status_code == 200
+    assert off_resp.json()["led_status"] is False
+    assert off_resp.json()["mode"] == "MANUAL"

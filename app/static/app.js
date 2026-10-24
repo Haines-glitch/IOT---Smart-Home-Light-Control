@@ -1,11 +1,12 @@
 /**
  * Smart Home IoT Light Monitoring & Recommendation System
- * Frontend Controller
+ * Frontend Controller & Remote Light Controls
  */
 
 let pollIntervalId = null;
+let currentControlMode = "AUTO";
 
-// DOM Elements
+// DOM Elements - Status & Metrics
 const dbStatusBadge = document.getElementById("db-status-badge");
 const systemStatusText = document.getElementById("system-status-text");
 const recomIcon = document.getElementById("recom-icon");
@@ -19,6 +20,15 @@ const valMode = document.getElementById("val-mode");
 const valDeviceId = document.getElementById("val-device-id");
 const valTimestamp = document.getElementById("val-timestamp");
 
+// DOM Elements - Interactive Light Controls
+const btnSetAuto = document.getElementById("btn-set-auto");
+const btnSetManual = document.getElementById("btn-set-manual");
+const btnLightOn = document.getElementById("btn-light-on");
+const btnLightOff = document.getElementById("btn-light-off");
+const controlFeedback = document.getElementById("control-feedback");
+const controlSyncBadge = document.getElementById("control-sync-badge");
+
+// DOM Elements - Table & Polling
 const limitSelect = document.getElementById("limit-select");
 const autoRefreshSelect = document.getElementById("auto-refresh-select");
 const btnRefresh = document.getElementById("btn-refresh");
@@ -48,6 +58,76 @@ async function checkHealth() {
     dbStatusBadge.style.color = "var(--accent-rose)";
     dbStatusBadge.style.borderColor = "rgba(244, 63, 94, 0.3)";
     systemStatusText.textContent = "Backend Offline";
+  }
+}
+
+/**
+ * Fetch Current Control State
+ */
+async function fetchControlState() {
+  try {
+    const res = await fetch("/api/control");
+    if (res.ok) {
+      const data = await res.json();
+      updateControlUI(data.mode, data.led_status);
+    }
+  } catch (err) {
+    console.error("Control state fetch error:", err);
+  }
+}
+
+/**
+ * Send Control Command (Mode / Manual LED State)
+ */
+async function sendControlCommand(cmd) {
+  try {
+    controlFeedback.textContent = "Sending command to smart home system...";
+    const res = await fetch("/api/control", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(cmd)
+    });
+
+    if (!res.ok) throw new Error("Failed to send command");
+    const data = await res.json();
+    updateControlUI(data.mode, data.led_status);
+
+    if (cmd.mode === "AUTO") {
+      controlFeedback.textContent = "Switched to Automatic Mode: Sensor now controls light automatically.";
+    } else if (cmd.mode === "MANUAL") {
+      controlFeedback.textContent = "Switched to Manual Mode: Use the LIGHT ON and LIGHT OFF buttons below.";
+    } else if (cmd.led_status !== undefined) {
+      controlFeedback.textContent = cmd.led_status
+        ? "Command sent: Light turned ON (Manual override active)."
+        : "Command sent: Light turned OFF (Manual override active).";
+    }
+  } catch (err) {
+    controlFeedback.textContent = "Error sending command: " + err.message;
+  }
+}
+
+/**
+ * Update Control Buttons UI State
+ */
+function updateControlUI(mode, ledStatus) {
+  currentControlMode = mode;
+
+  if (mode === "AUTO") {
+    btnSetAuto.classList.add("active");
+    btnSetManual.classList.remove("active");
+    btnLightOn.disabled = true;
+    btnLightOff.disabled = true;
+    controlSyncBadge.textContent = "Mode: Automatic (Sensor)";
+    controlSyncBadge.style.color = "var(--accent-cyan)";
+    controlSyncBadge.style.borderColor = "rgba(56, 189, 248, 0.3)";
+  } else {
+    btnSetAuto.classList.remove("active");
+    btnSetManual.classList.add("active");
+    btnLightOn.disabled = false;
+    btnLightOff.disabled = false;
+    controlSyncBadge.textContent = "Mode: Manual (Web Override)";
+    controlSyncBadge.style.color = "var(--accent-amber)";
+    controlSyncBadge.style.borderColor = "rgba(245, 158, 11, 0.3)";
   }
 }
 
@@ -202,15 +282,41 @@ function setPolling(intervalMs) {
     pollIntervalId = setInterval(() => {
       fetchTelemetry();
       checkHealth();
+      fetchControlState();
     }, ms);
   }
 }
 
-// Event Listeners
+// Event Listeners - Control Buttons
+btnSetAuto.addEventListener("click", () => {
+  sendControlCommand({ mode: "AUTO" });
+});
+
+btnSetManual.addEventListener("click", () => {
+  sendControlCommand({ mode: "MANUAL" });
+});
+
+btnLightOn.addEventListener("click", () => {
+  if (currentControlMode !== "MANUAL") {
+    sendControlCommand({ mode: "MANUAL", led_status: true });
+  } else {
+    sendControlCommand({ led_status: true });
+  }
+});
+
+btnLightOff.addEventListener("click", () => {
+  if (currentControlMode !== "MANUAL") {
+    sendControlCommand({ mode: "MANUAL", led_status: false });
+  } else {
+    sendControlCommand({ led_status: false });
+  }
+});
+
+// Event Listeners - Telemetry & Table
 btnRefresh.addEventListener("click", () => {
   btnRefresh.disabled = true;
   btnRefresh.textContent = "Syncing...";
-  Promise.all([fetchTelemetry(), checkHealth()]).finally(() => {
+  Promise.all([fetchTelemetry(), checkHealth(), fetchControlState()]).finally(() => {
     btnRefresh.disabled = false;
     btnRefresh.textContent = "↻ Refresh Now";
   });
@@ -227,6 +333,7 @@ autoRefreshSelect.addEventListener("change", (e) => {
 // Initialization
 document.addEventListener("DOMContentLoaded", () => {
   checkHealth();
+  fetchControlState();
   fetchTelemetry();
   setPolling(autoRefreshSelect.value || 5000);
 });

@@ -412,6 +412,22 @@ void sendTelemetryToCloud() {
     String responseBody = https.getString();
     if (httpCode == HTTP_CODE_OK || httpCode == HTTP_CODE_CREATED) {
       Serial.println("[Cloud] Reading submitted and saved in PostgreSQL successfully!");
+
+      // Actuate commands received from the cloud web dashboard
+      if (responseBody.indexOf("\"target_mode\":\"MANUAL\"") >= 0) {
+        automaticMode = false;
+        if (responseBody.indexOf("\"target_led\":true") >= 0) {
+          ledOn = true;
+        } else if (responseBody.indexOf("\"target_led\":false") >= 0) {
+          ledOn = false;
+        }
+        digitalWrite(LED_PIN, ledOn ? HIGH : LOW);
+        Serial.printf("[Cloud Control] Mode: MANUAL | LED: %s\n", ledOn ? "ON" : "OFF");
+      } else if (responseBody.indexOf("\"target_mode\":\"AUTO\"") >= 0) {
+        automaticMode = true;
+        updateSensor();
+        Serial.println("[Cloud Control] Mode: AUTO | Sensor automatic control active");
+      }
     } else {
       Serial.println("[Cloud] Backend response:");
       Serial.println(responseBody);

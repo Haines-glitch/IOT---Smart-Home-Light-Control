@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Smart Home IoT | Light Monitoring & Recommendation System</title>
-  <meta name="description" content="Real-time light monitoring, LED status tracking, and energy efficiency recommendation system for ESP32 smart home.">
+  <meta name="description" content="Real-time light monitoring, LED status tracking, manual controls, and energy efficiency recommendation system for ESP32 smart home.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -80,6 +80,54 @@
           <div class="card-value" style="font-size: 1.25rem;" id="val-device-id">Waiting...</div>
           <div class="card-subtext" id="val-timestamp">Last sync: Never</div>
         </article>
+      </section>
+
+      <!-- Interactive Light Control Panel -->
+      <section class="control-panel-section" aria-label="Interactive Light Control">
+        <div class="control-card">
+          <div class="control-card-header">
+            <div class="control-title-box">
+              <span class="control-icon">🎛️</span>
+              <div>
+                <h2>Interactive Light Control</h2>
+                <p class="card-subtext">Switch operating mode or manually turn the light ON / OFF</p>
+              </div>
+            </div>
+            <div id="control-sync-badge" class="sync-badge">Mode: Auto</div>
+          </div>
+
+          <div class="control-body">
+            <!-- Mode Toggle -->
+            <div class="control-row">
+              <span class="control-label">Control Mode:</span>
+              <div class="mode-toggle-group">
+                <button id="btn-set-auto" class="btn-toggle active" type="button">
+                  <span>🤖 Automatic Mode</span>
+                </button>
+                <button id="btn-set-manual" class="btn-toggle" type="button">
+                  <span>✋ Manual Mode</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Manual Light Buttons (ON / OFF) -->
+            <div id="manual-controls-panel" class="manual-controls-panel">
+              <div class="manual-buttons-wrapper">
+                <button id="btn-light-on" class="btn-action btn-light-on" type="button">
+                  <span class="btn-icon">💡</span>
+                  <span class="btn-text">LIGHT ON</span>
+                </button>
+                <button id="btn-light-off" class="btn-action btn-light-off" type="button">
+                  <span class="btn-icon">⚫</span>
+                  <span class="btn-text">LIGHT OFF</span>
+                </button>
+              </div>
+              <p id="control-feedback" class="control-feedback-text">
+                Automatic Mode Active: Sensor automatically controls light (Dark = ON, Light = OFF). Switch to Manual mode to use Light ON/OFF buttons.
+              </p>
+            </div>
+          </div>
+        </div>
       </section>
 
       <!-- History Table Section -->
