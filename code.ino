@@ -23,7 +23,6 @@ const char* deviceId = "esp32-smart-home-01";
 // Telemetry transmit interval (in milliseconds, e.g. 6000 = 6 seconds)
 const unsigned long telemetryInterval = 6000;
 unsigned long lastTelemetryTime = 0;
-
 // ============================================================================
 // 2. HARDWARE PINS
 // ============================================================================

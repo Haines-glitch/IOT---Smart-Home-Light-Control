@@ -15,9 +15,12 @@ class Settings:
 
     # Database configuration
     # Render provides postgres:// which SQLAlchemy 1.4+ requires to be postgresql://
+    # Explicitly using postgresql+psycopg2:// prevents driver ambiguity across SQLAlchemy versions
     _raw_db_url: str = os.getenv("DATABASE_URL", "sqlite:///./sensor_data.db")
     if _raw_db_url.startswith("postgres://"):
-        DATABASE_URL: str = _raw_db_url.replace("postgres://", "postgresql://", 1)
+        DATABASE_URL: str = _raw_db_url.replace("postgres://", "postgresql+psycopg2://", 1)
+    elif _raw_db_url.startswith("postgresql://") and not _raw_db_url.startswith("postgresql+"):
+        DATABASE_URL: str = _raw_db_url.replace("postgresql://", "postgresql+psycopg2://", 1)
     else:
         DATABASE_URL: str = _raw_db_url
 
